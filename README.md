@@ -1,43 +1,51 @@
 # SessionSecretGenerator
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/session_secret_generator`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+This is a super simple gem used to generate session secrets using a SecureRandom hex. This is useful if you're using a framework like Sinatra to build your webapp and want to make sure your sessions are secure.
 
 ## Installation
-
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'session_secret_generator'
-```
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
 
     $ gem install session_secret_generator
 
 ## Usage
 
-TODO: Write usage instructions here
+    $ generate_secret
 
-## Development
+This will output a 128 character hexadecimal string that you can use as a session secret. You can then add 
+```
+SESSION_SECRET=yourlonghexadecimalstringhere
+```
+to your .env file at the root of your project to keep your secret out of version control. You'll want to install the [dotenv gem](https://github.com/bkeepers/dotenv) for this purpose. 
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+There are 2 things you need to do to make sure this secret is read by your application.
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+1. Load your .env file from config.ru by adding 
+```
+require 'dotenv/load'
+``` 
+2. Tell Sinatra about your secret by adding it to your configuration in your application controller. Adding these lines:
 
-## Contributing
+```
+set :session_secret, ENV.fetch('SESSION_SECRET')
+```
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/DakotaLMartinez/session_secret_generator. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Here's a basic example in context:
 
-## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+```
+require './config/environment'
 
-## Code of Conduct
+class ApplicationController < Sinatra::Base
 
-Everyone interacting in the SessionSecretGenerator project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/DakotaLMartinez/session_secret_generator/blob/master/CODE_OF_CONDUCT.md).
+  configure do
+    set :public_folder, 'public'
+    set :views, 'app/views'
+    register Sinatra::Flash
+    enable :sessions
+    set :session_secret, ENV.fetch('SESSION_SECRET') 
+  end
+
+  get "/" do
+    erb :"/posts/index.html"
+  end
+end
+```
